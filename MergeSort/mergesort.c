@@ -5,70 +5,77 @@
 #include <time.h>
 
 #define ARRAY_LENGTH 25
-#define RAND_LIM 100
+#define RAND_LIM 10
 
-typedef struct {
-    int *ar, len;
-} Array;
 
 void merge_sort(int *a, int *aux, int length) {
-    if (length > 2) {
-        int third = length / 3;
-        Array sections[] = {{a,             third},
-                            {a + third,     third},
-                            {a + 2 * third, length - (2 * third)}};
-        int i;
-        for (i = 0; i < 3; i++) {
-            // Recursive call
-            merge_sort(sections[i].ar, aux, sections[i].len);
-        }
-        // Merge sections
-        int sec_index[] = {0, 0, 0}; // Start of unmerged ints in each section
-        for (i = 0; i < length; i++) {
-            int min = INT_MAX; // Minimum unmerged
-            int min_sec; // Section containing the minimum value
-            int section;
-            for (section = 0; section < 3; section++) {
-                int n = sections[section].ar[sec_index[section]];
-                if (n < min && sec_index[section] < sections[section].len) {
-                    min = n;
-                    min_sec = section;
-                }
-            }
-            aux[i] = min;
-            sec_index[min_sec]++;
-        }
-        memcpy(a, aux, sizeof(int) * length);
-    } else if (length == 2) {
-        if (a[0] > a[1]) {
-            int temp = a[1];
-            a[1] = a[0];
-            a[0] = temp;
-        }
-    }
+
+	typedef struct {
+		int *ar, len, index;
+	} Section;
+
+	if (length == 2 && a[0] > a[1]) {
+		int temp = a[1];
+		a[1] = a[0];
+		a[0] = temp;
+	} else if (length > 2) {
+		// Cut up the array into 3 sections, index is set to 0 for all 3
+		int third = length / 3;
+		Section sections[] = {{a,             third},
+							  {a + third,     third},
+							  {a + 2 * third, length - (2 * third)}};
+		// Mergesort each section
+		int i;
+		for (i = 0; i < 3; i++)
+			merge_sort(sections[i].ar, aux, sections[i].len);
+
+		// Merge all three sections
+		for (i = 0; i < length; i++) {
+			int min = INT_MAX; // Minimum value
+			int min_sec; // Section containing the minimum value
+			int s; // Section
+			//Iterate over each section, find lowest value to merge
+			for (s = 0; s < 3; s++) {
+				Section *sec = sections + s;
+				if (sec->index < sec->len) {
+					int n = sec->ar[sec->index];
+					if (n < min) {
+						min = n;
+						min_sec = s;
+					}
+				}
+			}
+			//Write min to aux and increment the containing section's index
+			aux[i] = min;
+			sections[min_sec].index++;
+		}
+		//Copy aux to a
+		memcpy(a, aux, sizeof(int) * length);
+	}
 }
 
-void printArray(Array a) {
-    int i;
-    putchar('{');
-    for (i = 0; i < a.len - 1; i++) {
-        printf(" %d,", a.ar[i]);
-    }
-    printf(" %d }\n", a.ar[i]);
+void print_array(int *arr, int len) {
+	int i;
+	putchar('{');
+	for (i = 0; i < len - 1; i++) {
+		printf(" %d,", arr[i]);
+	}
+	printf(" %d }\n", arr[i]);
 }
 
 int main() {
-    int nums[ARRAY_LENGTH], aux[ARRAY_LENGTH], i;
-    srand(time(NULL));
+	int i, nums[ARRAY_LENGTH], aux[ARRAY_LENGTH];
+	srand(time(NULL));
 
-    for (i = 0; i < ARRAY_LENGTH; i++) {
-        nums[i] = rand() % RAND_LIM;
-    }
-    Array array = {nums, ARRAY_LENGTH};
-    puts("Unsorted:");
-    printArray(array);
-    merge_sort(nums, aux, ARRAY_LENGTH);
-    puts("Sorted:");
-    printArray(array);
-    return 0;
+	for (i = 0; i < ARRAY_LENGTH; i++)
+		nums[i] = rand() % RAND_LIM;
+
+	puts("Unsorted:");
+	print_array(nums, ARRAY_LENGTH);
+
+	merge_sort(nums, aux, ARRAY_LENGTH);
+
+	puts("Sorted:");
+	print_array(nums, ARRAY_LENGTH);
+	return 0;
 }
